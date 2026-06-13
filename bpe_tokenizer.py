@@ -163,8 +163,8 @@ class SignificanceAwareBPE(Tokenizer):
     """
     Entropy-weighted BPE.
 
-    Selects each merge by significance_score = entropy_reduction × frequency,
-    where entropy_reduction = H_before − H_after (bits per token saved).
+    Selects each merge by significance_score = entropy_reduction * frequency,
+    where entropy_reduction = H_before - H_after (bits per token saved).
 
     The incremental entropy formula lets us score every candidate pair in O(1)
     without re-scanning the sequence, so per-step cost is the same order as
