@@ -1,0 +1,4 @@
+name,vocab_size,original_bytes,sequence_length,compression_ratio,train_time_s,entropy_per_token,vocabulary_coverage,vocabulary_utilization,sequence_length_reduction_pct
+CharacterLevel,59,50000,50000,1.0,0.0,4.727977349273804,100.0,100.0,0.0
+StandardBPE,512,50000,23899,2.0921377463492195,2.23998387507163,7.651819508710204,100.0,58.984375,52.202000000000005
+SignificanceAwareBPE,512,50000,45995,1.0870746820306556,3.050915874890052,4.572441831971775,100.0,38.0859375,8.01
