@@ -21,7 +21,8 @@ import urllib.request
 from collections import Counter
 
 import matplotlib
-matplotlib.use("Agg")   # non-interactive; must come before pyplot import
+
+matplotlib.use("Agg")  # non-interactive; must come before pyplot import
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import numpy as np
@@ -33,33 +34,35 @@ from bpe_tokenizer import StandardBPE, SignificanceAwareBPE
 # ---------------------------------------------------------------------------
 
 COLORS = {
-    "CharacterLevel":       "#8C8C8C",
-    "StandardBPE":          "#4C72B0",
+    "CharacterLevel": "#8C8C8C",
+    "StandardBPE": "#4C72B0",
     "SignificanceAwareBPE": "#DD8452",
 }
 DISPLAY_NAMES = {
-    "CharacterLevel":       "Character-Level",
-    "StandardBPE":          "Standard BPE",
+    "CharacterLevel": "Character-Level",
+    "StandardBPE": "Standard BPE",
     "SignificanceAwareBPE": "Significance-Aware BPE",
 }
 
-plt.rcParams.update({
-    "font.family":        "DejaVu Sans",
-    "font.size":          11,
-    "axes.titlesize":     13,
-    "axes.titleweight":   "bold",
-    "axes.labelsize":     12,
-    "xtick.labelsize":    10,
-    "ytick.labelsize":    10,
-    "legend.fontsize":    10,
-    "legend.framealpha":  0.85,
-    "axes.spines.top":    False,
-    "axes.spines.right":  False,
-    "axes.grid":          True,
-    "grid.alpha":         0.3,
-    "grid.linestyle":     "--",
-    "figure.dpi":         150,
-})
+plt.rcParams.update(
+    {
+        "font.family": "DejaVu Sans",
+        "font.size": 11,
+        "axes.titlesize": 13,
+        "axes.titleweight": "bold",
+        "axes.labelsize": 12,
+        "xtick.labelsize": 10,
+        "ytick.labelsize": 10,
+        "legend.fontsize": 10,
+        "legend.framealpha": 0.85,
+        "axes.spines.top": False,
+        "axes.spines.right": False,
+        "axes.grid": True,
+        "grid.alpha": 0.3,
+        "grid.linestyle": "--",
+        "figure.dpi": 150,
+    }
+)
 
 OUTPUT_DIR = os.path.join("analysis", "plots")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -68,6 +71,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 # ---------------------------------------------------------------------------
 # Data helpers
 # ---------------------------------------------------------------------------
+
 
 def _shannon_entropy(ids):
     if not ids:
@@ -98,8 +102,8 @@ def get_compression_ratios(text, vocab_size):
     sig_ratio = n_bytes / len(sig.encode(text))
 
     return {
-        "CharacterLevel":       char_ratio,
-        "StandardBPE":          std_ratio,
+        "CharacterLevel": char_ratio,
+        "StandardBPE": std_ratio,
         "SignificanceAwareBPE": sig_ratio,
     }
 
@@ -135,7 +139,7 @@ def get_entropy_curves(text, vocab_size):
         # entropy_before[i] = actual H just before merge i
         entropies = [e["entropy_before"] for e in hist]
         if hist:
-            entropies.append(hist[-1]["entropy_after"])   # final estimated value
+            entropies.append(hist[-1]["entropy_after"])  # final estimated value
         curves[label] = entropies
     return curves
 
@@ -159,6 +163,7 @@ def get_significance_data(text, vocab_size):
 # Plot 1 — Compression Ratio Bar Chart
 # ---------------------------------------------------------------------------
 
+
 def plot_compression_ratio(text, vocab_size, ax=None):
     standalone = ax is None
     if standalone:
@@ -170,9 +175,13 @@ def plot_compression_ratio(text, vocab_size, ax=None):
     x = np.arange(len(keys))
 
     bars = ax.bar(
-        x, vals,
+        x,
+        vals,
         color=[COLORS[k] for k in keys],
-        width=0.5, zorder=3, edgecolor="white", linewidth=0.5,
+        width=0.5,
+        zorder=3,
+        edgecolor="white",
+        linewidth=0.5,
     )
 
     for bar, v in zip(bars, vals):
@@ -180,11 +189,20 @@ def plot_compression_ratio(text, vocab_size, ax=None):
             bar.get_x() + bar.get_width() / 2,
             bar.get_height() + 0.03,
             f"{v:.3f}×",
-            ha="center", va="bottom", fontsize=11, fontweight="bold",
+            ha="center",
+            va="bottom",
+            fontsize=11,
+            fontweight="bold",
         )
 
-    ax.axhline(1.0, color="#333333", linestyle="--", linewidth=0.9,
-               alpha=0.5, label="No compression (1×)")
+    ax.axhline(
+        1.0,
+        color="#333333",
+        linestyle="--",
+        linewidth=0.9,
+        alpha=0.5,
+        label="No compression (1×)",
+    )
     ax.set_xticks(x)
     ax.set_xticklabels([DISPLAY_NAMES[k] for k in keys], rotation=8, ha="right")
     ax.set_ylabel("Compression Ratio  (higher is better)")
@@ -201,6 +219,7 @@ def plot_compression_ratio(text, vocab_size, ax=None):
 # Plot 2 — Merge Speed vs Vocab Size
 # ---------------------------------------------------------------------------
 
+
 def plot_merge_speed(text, vocab_sizes, ax=None):
     standalone = ax is None
     if standalone:
@@ -208,14 +227,31 @@ def plot_merge_speed(text, vocab_sizes, ax=None):
 
     std_t, sig_t = get_speed_curve(text, vocab_sizes)
 
-    ax.plot(vocab_sizes, std_t,
-            color=COLORS["StandardBPE"], label=DISPLAY_NAMES["StandardBPE"],
-            marker="o", markersize=5, linewidth=2)
-    ax.plot(vocab_sizes, sig_t,
-            color=COLORS["SignificanceAwareBPE"], label=DISPLAY_NAMES["SignificanceAwareBPE"],
-            marker="s", markersize=5, linewidth=2)
-    ax.axhline(0, color=COLORS["CharacterLevel"], linestyle="--", linewidth=1.2,
-               label=f"{DISPLAY_NAMES['CharacterLevel']} (no training)")
+    ax.plot(
+        vocab_sizes,
+        std_t,
+        color=COLORS["StandardBPE"],
+        label=DISPLAY_NAMES["StandardBPE"],
+        marker="o",
+        markersize=5,
+        linewidth=2,
+    )
+    ax.plot(
+        vocab_sizes,
+        sig_t,
+        color=COLORS["SignificanceAwareBPE"],
+        label=DISPLAY_NAMES["SignificanceAwareBPE"],
+        marker="s",
+        markersize=5,
+        linewidth=2,
+    )
+    ax.axhline(
+        0,
+        color=COLORS["CharacterLevel"],
+        linestyle="--",
+        linewidth=1.2,
+        label=f"{DISPLAY_NAMES['CharacterLevel']} (no training)",
+    )
 
     ax.set_xlabel("Vocabulary Size")
     ax.set_ylabel("Training Time (seconds)")
@@ -232,6 +268,7 @@ def plot_merge_speed(text, vocab_sizes, ax=None):
 # Plot 3 — Entropy per Token Over Merges
 # ---------------------------------------------------------------------------
 
+
 def plot_entropy_over_merges(text, vocab_size, ax=None):
     standalone = ax is None
     if standalone:
@@ -241,9 +278,12 @@ def plot_entropy_over_merges(text, vocab_size, ax=None):
 
     for key, entropies in curves.items():
         ax.plot(
-            range(len(entropies)), entropies,
-            color=COLORS[key], label=DISPLAY_NAMES[key],
-            linewidth=2, alpha=0.9,
+            range(len(entropies)),
+            entropies,
+            color=COLORS[key],
+            label=DISPLAY_NAMES[key],
+            linewidth=2,
+            alpha=0.9,
         )
 
     # Shade the gap between the two curves to highlight the difference
@@ -252,15 +292,27 @@ def plot_entropy_over_merges(text, vocab_size, ax=None):
         sig_e = np.array(curves["SignificanceAwareBPE"])
         min_len = min(len(std_e), len(sig_e))
         x = np.arange(min_len)
-        ax.fill_between(x, std_e[:min_len], sig_e[:min_len],
-                        alpha=0.12, color="#888888", label="Strategy gap")
+        ax.fill_between(
+            x,
+            std_e[:min_len],
+            sig_e[:min_len],
+            alpha=0.12,
+            color="#888888",
+            label="Strategy gap",
+        )
 
     # Annotate initial entropy
     initial = next(iter(curves.values()))
     if initial:
         h0 = initial[0]
-        ax.axhline(h0, color="gray", linestyle=":", linewidth=0.9,
-                   alpha=0.6, label=f"Initial H = {h0:.2f} bits")
+        ax.axhline(
+            h0,
+            color="gray",
+            linestyle=":",
+            linewidth=0.9,
+            alpha=0.6,
+            label=f"Initial H = {h0:.2f} bits",
+        )
 
     ax.set_xlabel("Merge Step")
     ax.set_ylabel("Entropy per Token (bits)")
@@ -276,6 +328,7 @@ def plot_entropy_over_merges(text, vocab_size, ax=None):
 # Plot 4 — Merge Significance Distribution
 # ---------------------------------------------------------------------------
 
+
 def plot_significance_distribution(text, vocab_size, ax=None):
     standalone = ax is None
     if standalone:
@@ -288,8 +341,11 @@ def plot_significance_distribution(text, vocab_size, ax=None):
     _, _, patches = ax.hist(
         positive if len(positive) else scores,
         bins=n_bins,
-        color=COLORS["SignificanceAwareBPE"], alpha=0.75,
-        edgecolor="white", linewidth=0.5, zorder=3,
+        color=COLORS["SignificanceAwareBPE"],
+        alpha=0.75,
+        edgecolor="white",
+        linewidth=0.5,
+        zorder=3,
     )
 
     # Cumulative % on secondary axis
@@ -297,8 +353,15 @@ def plot_significance_distribution(text, vocab_size, ax=None):
     sorted_s = np.sort(scores)[::-1]
     cum = np.cumsum(sorted_s) / (sorted_s.sum() or 1) * 100
     xs = np.linspace(scores.min(), scores.max(), len(cum))
-    ax2.plot(xs, cum, color="#333333", linewidth=1.3, linestyle="--",
-             alpha=0.65, label="Cumulative %")
+    ax2.plot(
+        xs,
+        cum,
+        color="#333333",
+        linewidth=1.3,
+        linestyle="--",
+        alpha=0.65,
+        label="Cumulative %",
+    )
     ax2.set_ylim(0, 110)
     ax2.set_ylabel("Cumulative % of Total Significance")
     ax2.spines["top"].set_visible(False)
@@ -308,21 +371,34 @@ def plot_significance_distribution(text, vocab_size, ax=None):
     y_top = ax.get_ylim()[1]
     for rank, idx in enumerate(top_idx):
         tok_label = repr(labels[idx]) if len(labels[idx]) > 8 else f'"{labels[idx]}"'
-        ax.axvline(scores[idx], color="#C44E52", linestyle=":", linewidth=1.2, alpha=0.7)
+        ax.axvline(
+            scores[idx], color="#C44E52", linestyle=":", linewidth=1.2, alpha=0.7
+        )
         ax.text(
-            scores[idx] * 0.995, y_top * (0.95 - rank * 0.12),
+            scores[idx] * 0.995,
+            y_top * (0.95 - rank * 0.12),
             f"#{rank + 1} {tok_label}",
-            ha="right", va="top", fontsize=8.5, color="#C44E52",
+            ha="right",
+            va="top",
+            fontsize=8.5,
+            color="#C44E52",
             bbox=dict(boxstyle="round,pad=0.2", fc="white", alpha=0.7, ec="none"),
         )
 
     # Zero-score count annotation
     n_zero = int((scores == 0).sum())
     if n_zero:
-        ax.text(0.98, 0.97, f"{n_zero} merges with\nsig. score = 0",
-                transform=ax.transAxes, ha="right", va="top",
-                fontsize=9, color="gray",
-                bbox=dict(boxstyle="round,pad=0.3", fc="white", alpha=0.8, ec="#cccccc"))
+        ax.text(
+            0.98,
+            0.97,
+            f"{n_zero} merges with\nsig. score = 0",
+            transform=ax.transAxes,
+            ha="right",
+            va="top",
+            fontsize=9,
+            color="gray",
+            bbox=dict(boxstyle="round,pad=0.3", fc="white", alpha=0.8, ec="#cccccc"),
+        )
 
     ax.set_xlabel("Significance Score  (entropy_reduction × frequency)")
     ax.set_ylabel("Number of Merges")
@@ -361,7 +437,6 @@ with a BPE vocabulary target of 512 tokens.
 
 ---
 """,
-
     # ── Figure 1 ────────────────────────────────────────────────────────────
     """\
 ## Figure 1 — Compression Ratio
@@ -411,7 +486,6 @@ optimises purely for sequence length; Significance-Aware BPE optimises for the
 
 ---
 """,
-
     # ── Figure 2 ────────────────────────────────────────────────────────────
     """\
 ## Figure 2 — Training Time vs Vocabulary Size
@@ -453,7 +527,6 @@ time and amortised over all future encoding calls.
 
 ---
 """,
-
     # ── Figure 3 ────────────────────────────────────────────────────────────
     """\
 ## Figure 3 — Entropy Reduction Over Merges
@@ -505,7 +578,6 @@ in compression ratio.
 
 ---
 """,
-
     # ── Figure 4 ────────────────────────────────────────────────────────────
     """\
 ## Figure 4 — Merge Significance Distribution
@@ -606,6 +678,7 @@ def generate_report_notebook() -> None:
 # Save helper
 # ---------------------------------------------------------------------------
 
+
 def _save(fig, filename, close=True):
     path = os.path.join(OUTPUT_DIR, filename)
     fig.savefig(path, bbox_inches="tight", dpi=150)
@@ -620,8 +693,15 @@ def _save(fig, filename, close=True):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate Week 1 comparison plots")
-    parser.add_argument("--vocab",   type=int, default=512,    help="BPE vocab size (default: 512)")
-    parser.add_argument("--sample",  type=int, default=30_000, help="Corpus chars to use (default: 30000)")
+    parser.add_argument(
+        "--vocab", type=int, default=512, help="BPE vocab size (default: 512)"
+    )
+    parser.add_argument(
+        "--sample",
+        type=int,
+        default=30_000,
+        help="Corpus chars to use (default: 30000)",
+    )
     args = parser.parse_args()
 
     data_path = "input.txt"
@@ -635,9 +715,7 @@ if __name__ == "__main__":
     with open(data_path, "r", encoding="utf-8") as f:
         text = f.read()[: args.sample]
 
-    vocab_sizes_for_speed = sorted(set(
-        [270, 300, 350, 400, 450] + [args.vocab]
-    ))
+    vocab_sizes_for_speed = sorted(set([270, 300, 350, 400, 450] + [args.vocab]))
 
     print(f"\nCorpus: {len(text):,} chars | BPE vocab target: {args.vocab}\n")
 
