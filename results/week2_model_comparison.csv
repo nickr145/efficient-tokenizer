@@ -1,0 +1,2 @@
+tokenizer,vocab_size,total_tokens,seq_len_reduction,train_time_s,best_val_loss,final_val_loss,perplexity,n_params
+CharacterLevel,65,1115394,0.0,64.58,2.1672,2.1672,8.7335,1616449
