@@ -1,2 +1,2 @@
-tokenizer,vocab_size,total_tokens,seq_len_reduction,train_time_s,best_val_loss,final_val_loss,perplexity,n_params
-CharacterLevel,65,1115394,0.0,64.58,2.1672,2.1672,8.7335,1616449
+model,tokenizer,vocab_size,n_params,total_tokens,seq_len_reduction,tokens_per_sec,val_loss,val_bits_per_token,test_loss,test_perplexity,peak_memory_mb
+char,CharacterLevel,65,1616449,1115394,0.0,13839.8,2.1672,3.1266,3.7972,44.577,22.17
