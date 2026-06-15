@@ -49,6 +49,16 @@ class TokenImportanceAnalyzer:
     """
 
     def __init__(self, vocab_size: int) -> None:
+        """Initialise the analyzer for a vocabulary of the given size.
+
+        Args:
+            vocab_size: Number of tokens in the model vocabulary.  Must be > 0.
+
+        Raises:
+            ValueError: If vocab_size is not a positive integer.
+        """
+        if vocab_size <= 0:
+            raise ValueError(f"vocab_size must be > 0; got {vocab_size}")
         self.vocab_size = vocab_size
         self._freq_scores: Dict[int, float] = {}
         self._attn_scores: Dict[int, float] = {}
@@ -59,10 +69,18 @@ class TokenImportanceAnalyzer:
     # ------------------------------------------------------------------
 
     def compute_frequency_importance(self, data: List[int]) -> Dict[int, float]:
-        """
-        Score each token by normalized occurrence frequency.
+        """Score each token by normalized occurrence frequency.
 
-        score(tok) = count(tok) / max_count_in_corpus  →  [0, 1]
+        score(tok) = count(tok) / max_count_in_corpus, normalized to [0, 1].
+        Scores are also stored internally for use by analyze_token /
+        get_top_k_tokens.
+
+        Args:
+            data: Flat list of encoded token ids representing the corpus.
+
+        Returns:
+            Dict mapping token_id → frequency score in [0, 1].
+            Returns an empty dict if data is empty.
         """
         if not data:
             self._freq_scores = {}
@@ -100,6 +118,13 @@ class TokenImportanceAnalyzer:
             data:       Flat list of encoded token IDs.
             batch_size: Sequences per forward pass.
             n_batches:  Maximum number of batches to process.
+
+        Returns:
+            Dict mapping token_id → attention score in [0, 1].
+            Returns an empty dict if data is too short for even one window.
+
+        Raises:
+            ValueError: If model does not expose .cfg.block_size.
         """
         block_size = self._get_block_size(model)
         device = next(model.parameters()).device
@@ -200,6 +225,22 @@ class TokenImportanceAnalyzer:
 
         epsilon is added to every score before normalisation so near-zero
         gradients (rare but present tokens) are not completely masked out.
+
+        Args:
+            model:      Trained GPTLanguageModel.
+            data:       Flat list of encoded token IDs.
+            epsilon:    Smoothing constant added to all raw scores before
+                        normalisation.  Prevents zero-gradient tokens from
+                        being invisible relative to high-gradient tokens.
+            batch_size: Sequences per gradient accumulation step.
+            n_batches:  Maximum number of batches to process.
+
+        Returns:
+            Dict mapping token_id → gradient importance score in [0, 1].
+            Only tokens that appear in data are included.
+
+        Raises:
+            ValueError: If model does not expose .cfg.block_size.
         """
         block_size = self._get_block_size(model)
         device = next(model.parameters()).device
@@ -254,11 +295,15 @@ class TokenImportanceAnalyzer:
     # ------------------------------------------------------------------
 
     def analyze_token(self, token_id: int) -> Dict[str, float]:
-        """
-        Return all three importance scores for a single token.
+        """Return all three importance scores for a single token.
+
+        Args:
+            token_id: Integer token id to look up.
 
         Returns:
-            {"frequency": float, "attention": float, "gradient": float}
+            Dict with keys ``"frequency"``, ``"attention"``, ``"gradient"``,
+            each mapped to a float in [0, 1].  Returns 0.0 for any method
+            whose compute_* has not yet been called.
         """
         return {
             "frequency": self._freq_scores.get(token_id, 0.0),
@@ -267,13 +312,19 @@ class TokenImportanceAnalyzer:
         }
 
     def get_top_k_tokens(self, k: int = 20) -> List[Dict]:
-        """
-        Return the top-k tokens ranked by aggregate importance (descending).
+        """Return the top-k tokens ranked by aggregate importance (descending).
 
-        Returns a list of dicts:
-          [{"token_id", "frequency", "attention", "gradient", "aggregate"}, ...]
+        Aggregates the three stored score dicts using equal weights (1/3 each).
+        Call compute_*_importance methods first to populate the scores.
 
-        Calls aggregate_importance with equal weights (1/3 each) internally.
+        Args:
+            k: Number of top tokens to return.  Must be >= 1.
+
+        Returns:
+            List of dicts sorted by aggregate score (descending), each with
+            keys: ``token_id``, ``frequency``, ``attention``, ``gradient``,
+            ``aggregate``.  Returns an empty list if no scores have been
+            computed yet.
         """
         combined = self.aggregate_importance(
             self._freq_scores, self._attn_scores, self._grad_scores

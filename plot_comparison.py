@@ -704,7 +704,8 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    data_path = "input.txt"
+    data_path = os.path.join("data", "input.txt")
+    os.makedirs("data", exist_ok=True)
     if not os.path.exists(data_path):
         print("Downloading Tiny Shakespeare ...")
         urllib.request.urlretrieve(

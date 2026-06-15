@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data & large files
+data/input.txt
+*.pt
+
+# Results (keep CSVs, ignore generated media)
+results/week2_samples.txt
+analysis/week2/*.png
+analysis/week2/*.pdf
+analysis/week1/*.png
+analysis/week1/*.pdf
+
+# macOS
+.DS_Store
+
+# Claude Code
+.claude/

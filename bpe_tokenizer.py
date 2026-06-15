@@ -29,23 +29,59 @@ class Tokenizer(ABC):
 
     @abstractmethod
     def train(self, text: str, vocab_size: int) -> None:
-        """Build vocabulary from text up to vocab_size tokens."""
+        """Build vocabulary from text up to vocab_size tokens.
+
+        Args:
+            text: Raw training corpus (UTF-8 string).
+            vocab_size: Target vocabulary size. Must be >= 256 because the
+                initial vocabulary always covers all 256 byte values.
+
+        Raises:
+            ValueError: If vocab_size < 256.
+        """
 
     @abstractmethod
     def encode(self, text: str) -> List[int]:
-        """Convert text to a list of token ids."""
+        """Convert text to a list of token ids using the trained vocabulary.
+
+        Args:
+            text: Input string to encode (arbitrary UTF-8).
+
+        Returns:
+            List of integer token ids.  Empty list for empty input.
+        """
 
     @abstractmethod
     def decode(self, token_ids: List[int]) -> str:
-        """Reconstruct text from a list of token ids."""
+        """Reconstruct text from a list of token ids.
+
+        Args:
+            token_ids: Sequence of integer token ids produced by encode().
+
+        Returns:
+            Decoded UTF-8 string.  Invalid byte sequences are replaced with
+            the Unicode replacement character (U+FFFD).
+        """
 
     @abstractmethod
     def get_vocab(self) -> Dict[int, bytes]:
-        """Return {token_id: bytes} mapping for the full vocabulary."""
+        """Return a copy of the full vocabulary mapping.
+
+        Returns:
+            Dict mapping token_id (int) to its byte representation (bytes).
+            Always contains all 256 byte tokens plus any learned merge tokens.
+        """
 
     @abstractmethod
     def get_merge_history(self) -> List[dict]:
-        """Return metadata for every merge performed during training."""
+        """Return metadata for every merge performed during training.
+
+        Returns:
+            List of dicts, one per merge in the order they were applied.
+            StandardBPE keys: step, pair, frequency, new_token_id, new_token.
+            SignificanceAwareBPE additionally includes: entropy_before,
+            entropy_after, entropy_reduction, significance_score.
+        """
 
     def __repr__(self) -> str:
         v = getattr(self, "vocab", {})
@@ -57,13 +93,27 @@ class Tokenizer(ABC):
 # ---------------------------------------------------------------------------
 
 def _get_pairs(ids: List[int]) -> Counter:
-    """Count every consecutive pair in ids."""
+    """Count every consecutive (bigram) pair in ids.
+
+    Args:
+        ids: Sequence of integer token ids.
+
+    Returns:
+        Counter mapping each adjacent pair (a, b) to its occurrence count.
+    """
     return Counter(zip(ids, ids[1:]))
 
 
 def _merge_ids(ids: List[int], pair: Tuple[int, int], new_id: int) -> List[int]:
-    """
-    Replace all non-overlapping left-to-right occurrences of pair with new_id.
+    """Replace all non-overlapping left-to-right occurrences of pair with new_id.
+
+    Args:
+        ids:    Input sequence of token ids.
+        pair:   The (left, right) token pair to replace.
+        new_id: Replacement token id.
+
+    Returns:
+        New sequence with every non-overlapping occurrence of pair replaced.
     """
     result: List[int] = []
     i = 0
@@ -108,7 +158,10 @@ class StandardBPE(Tokenizer):
             text: Raw training corpus.
             vocab_size: Target vocabulary size (must be >= 256).
         """
-        assert vocab_size >= 256, "vocab_size must be >= 256 (byte vocab floor)"
+        if vocab_size < 256:
+            raise ValueError(
+                f"vocab_size must be >= 256 (byte vocabulary floor); got {vocab_size}"
+            )
 
         self.vocab = {i: bytes([i]) for i in range(256)}
         self.merges = {}
@@ -139,19 +192,46 @@ class StandardBPE(Tokenizer):
             ids = _merge_ids(ids, best, new_id)
 
     def encode(self, text: str) -> List[int]:
+        """Encode text into token ids using the trained merge table.
+
+        Args:
+            text: Input string (arbitrary UTF-8).
+
+        Returns:
+            List of integer token ids.
+        """
         ids: List[int] = list(text.encode("utf-8"))
         for pair, new_id in self.merges.items():
             ids = _merge_ids(ids, pair, new_id)
         return ids
 
     def decode(self, token_ids: List[int]) -> str:
+        """Decode token ids back to a UTF-8 string.
+
+        Args:
+            token_ids: Sequence of token ids produced by encode().
+
+        Returns:
+            Decoded string; invalid byte sequences are replaced with U+FFFD.
+        """
         raw = b"".join(self.vocab[t] for t in token_ids)
         return raw.decode("utf-8", errors="replace")
 
     def get_vocab(self) -> Dict[int, bytes]:
+        """Return a copy of the vocabulary mapping.
+
+        Returns:
+            Dict mapping token_id → bytes for all tokens in the vocabulary.
+        """
         return dict(self.vocab)
 
     def get_merge_history(self) -> List[dict]:
+        """Return a copy of the merge history list.
+
+        Returns:
+            List of dicts with keys: step, pair, frequency, new_token_id,
+            new_token.  One entry per merge, in training order.
+        """
         return list(self._merge_history)
 
 
@@ -179,7 +259,23 @@ class SignificanceAwareBPE(Tokenizer):
     """
 
     def __init__(self, entropy_weight: float = 1.0) -> None:
-        assert 0.0 <= entropy_weight <= 1.0, "entropy_weight must be in [0, 1]"
+        """Initialise the tokenizer.
+
+        Args:
+            entropy_weight: Blend factor controlling how much entropy reduction
+                influences merge selection.  Must be in [0.0, 1.0].
+                ``1.0`` selects merges purely by significance score (novel mode).
+                ``0.0`` degenerates to standard frequency-based BPE.
+                Intermediate values linearly interpolate between the two after
+                normalising each dimension to [0, 1] within each step.
+
+        Raises:
+            ValueError: If entropy_weight is outside [0.0, 1.0].
+        """
+        if not (0.0 <= entropy_weight <= 1.0):
+            raise ValueError(
+                f"entropy_weight must be in [0.0, 1.0]; got {entropy_weight}"
+            )
         self.entropy_weight = entropy_weight
         self.merges: Dict[Tuple[int, int], int] = {}
         self.vocab: Dict[int, bytes] = {}
@@ -272,7 +368,10 @@ class SignificanceAwareBPE(Tokenizer):
             text: Raw training corpus.
             vocab_size: Target vocabulary size (must be >= 256).
         """
-        assert vocab_size >= 256, "vocab_size must be >= 256"
+        if vocab_size < 256:
+            raise ValueError(
+                f"vocab_size must be >= 256 (byte vocabulary floor); got {vocab_size}"
+            )
 
         self.vocab = {i: bytes([i]) for i in range(256)}
         self.merges = {}
@@ -348,19 +447,47 @@ class SignificanceAwareBPE(Tokenizer):
     # ------------------------------------------------------------------
 
     def encode(self, text: str) -> List[int]:
+        """Encode text into token ids using the trained merge table.
+
+        Args:
+            text: Input string (arbitrary UTF-8).
+
+        Returns:
+            List of integer token ids.
+        """
         ids: List[int] = list(text.encode("utf-8"))
         for pair, new_id in self.merges.items():
             ids = _merge_ids(ids, pair, new_id)
         return ids
 
     def decode(self, token_ids: List[int]) -> str:
+        """Decode token ids back to a UTF-8 string.
+
+        Args:
+            token_ids: Sequence of token ids produced by encode().
+
+        Returns:
+            Decoded string; invalid byte sequences are replaced with U+FFFD.
+        """
         raw = b"".join(self.vocab[t] for t in token_ids)
         return raw.decode("utf-8", errors="replace")
 
     def get_vocab(self) -> Dict[int, bytes]:
+        """Return a copy of the vocabulary mapping.
+
+        Returns:
+            Dict mapping token_id → bytes for all tokens in the vocabulary.
+        """
         return dict(self.vocab)
 
     def get_merge_history(self) -> List[dict]:
+        """Return a copy of the merge history list.
+
+        Returns:
+            List of dicts with keys: step, pair, frequency, new_token_id,
+            new_token, entropy_before, entropy_after, entropy_reduction,
+            significance_score.  One entry per merge, in training order.
+        """
         return list(self._merge_history)
 
 

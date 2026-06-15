@@ -454,7 +454,8 @@ def main() -> None:
     print(f"Device: {DEVICE}")
 
     # ── Corpus ──────────────────────────────────────────────────────────────
-    data_path = "input.txt"
+    os.makedirs("data", exist_ok=True)
+    data_path = os.path.join("data", "input.txt")
     if not os.path.exists(data_path):
         print("Downloading Tiny Shakespeare ...")
         urllib.request.urlretrieve(

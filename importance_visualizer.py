@@ -77,7 +77,8 @@ plt.rcParams.update({
 
 def _load_corpus() -> str:
     import urllib.request
-    path = "input.txt"
+    os.makedirs("data", exist_ok=True)
+    path = os.path.join("data", "input.txt")
     if not os.path.exists(path):
         print("Downloading Tiny Shakespeare ...")
         urllib.request.urlretrieve(

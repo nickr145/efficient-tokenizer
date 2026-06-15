@@ -31,7 +31,7 @@ VOCAB_LARGE = 512   # 256 merges
 
 @pytest.fixture(scope="module")
 def shakespeare_excerpt():
-    path = os.path.join(os.path.dirname(__file__), "..", "input.txt")
+    path = os.path.join(os.path.dirname(__file__), "..", "data", "input.txt")
     if not os.path.exists(path):
         pytest.skip("input.txt not found — run benchmarks.py first to download it")
     with open(path, "r", encoding="utf-8") as f:
@@ -185,7 +185,7 @@ class TestEdgeCases:
 
     def test_vocab_size_floor_assertion(self, tokenizer_class):
         tok = tokenizer_class()
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             tok.train("hello", 100)   # below 256 byte floor
 
     def test_encode_text_not_in_training(self, tokenizer_class):
