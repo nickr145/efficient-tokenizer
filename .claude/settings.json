@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python importance_visualizer.py --model char --sample 5000 --n-batches 5 --top-k 10)"
+    ]
+  }
+}
