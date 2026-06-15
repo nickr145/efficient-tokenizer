@@ -5,7 +5,10 @@
       "Bash(python -c \"import psutil; print\\('psutil ok'\\)\")",
       "Bash(python -c \"import resource; print\\('resource ok'\\)\")",
       "Bash(python week2_benchmarks.py --model char --eval-batches 10 --gen-len 50)",
-      "Bash(python -c \"import torch; print\\(hasattr\\(torch.mps, 'current_allocated_memory'\\), hasattr\\(torch.mps, 'driver_allocated_memory'\\)\\)\")"
+      "Bash(python -c \"import torch; print\\(hasattr\\(torch.mps, 'current_allocated_memory'\\), hasattr\\(torch.mps, 'driver_allocated_memory'\\)\\)\")",
+      "Bash(python -c \"import nbformat; print\\(nbformat.__version__\\)\")",
+      "Bash(jupyter nbconvert *)",
+      "Bash(python -c ' *)"
     ]
   }
 }
